@@ -131,3 +131,7 @@ PixLint is source-available under the **PolyForm Strict License 1.0.0** — see 
 You may use it for permitted (noncommercial) purposes; commercial use, redistribution, or
 modification requires a separate license from the copyright holder. Contributions are welcome
 via pull request.
+
+---
+
+<sub>mcp-name: io.github.amitsingh-24/pixlint</sub>
