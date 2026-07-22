@@ -1,0 +1,26 @@
+# Files to INCLUDE in the source distribution (sdist)
+include README.md
+include LICENSE
+include requirements.txt
+include pyproject.toml
+recursive-include src/pixlint *.py
+
+# Files/dirs to EXCLUDE from the source distribution
+exclude plan.md
+exclude test_client.py
+exclude uv.lock
+exclude bandit*.json
+exclude .coverage
+exclude Dockerfile
+exclude .dockerignore
+prune tests
+prune test_runner
+prune docs
+prune examples
+prune build
+prune dist
+prune .github
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store

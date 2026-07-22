@@ -1,0 +1,113 @@
+[project]
+name = "pixlint"
+version = "1.0"
+description = "MCP server for managing, analyzing, and optimizing computer vision datasets"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "PolyForm Strict License 1.0.0"}
+authors = [
+    {name = "PixLint Contributors"},
+]
+keywords = ["computer-vision", "datasets", "mcp", "model-context-protocol", "augmentation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0",
+    "Pillow>=10.0",
+    "opencv-python-headless>=4.8",
+    "numpy>=1.24",
+    "scipy>=1.11",
+    "defusedxml>=0.7",
+    "PyYAML>=6.0",
+    "imagehash>=4.3",
+    "scikit-image>=0.21",
+    "scikit-learn>=1.3",
+    "pandas>=2.0",
+    "albumentations>=1.3",
+    "matplotlib>=3.7",
+    "rich>=13.0",
+    "tqdm>=4.65",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+    "mypy>=1.6",
+]
+torch = [
+    "torch>=2.0",
+    "torchvision>=0.15",
+]
+tensorflow = [
+    "tensorflow>=2.12",
+]
+clip = [
+    # PyPI-published repackaging of OpenAI CLIP (installs as `import clip`).
+    # A direct git URL is not allowed by PyPI, so we use this instead.
+    "clip-anytorch>=2.5",
+]
+umap = [
+    "umap-learn>=0.5",
+]
+hdf5 = [
+    "h5py>=3.8",
+]
+huggingface = [
+    "datasets>=2.14",
+    "huggingface-hub>=0.19",
+]
+dashboard = [
+    "streamlit>=1.28",
+]
+all = [
+    "pixlint[dev,torch,tensorflow,clip,umap,hdf5,huggingface,dashboard]",
+]
+
+[project.urls]
+Homepage = "https://github.com/amitsingh-24/PixLint"
+Repository = "https://github.com/amitsingh-24/PixLint"
+Issues = "https://github.com/amitsingh-24/PixLint/issues"
+
+[project.scripts]
+pixlint = "pixlint.server:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["pixlint"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+]
