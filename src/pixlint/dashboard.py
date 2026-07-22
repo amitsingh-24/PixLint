@@ -96,7 +96,7 @@ if dataset_ids:
         st.sidebar.markdown(f"Classes: {len(info.class_names)} | Format: {info.format.value}")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("PixLint v1.0")
+st.sidebar.markdown("PixLint v1.0.1")
 
 st.title("📷 PixLint Dashboard")
 

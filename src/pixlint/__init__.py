@@ -52,7 +52,7 @@ from pixlint.core.pipeline import (
 )
 from pixlint.utils.schemas import PipelineDefinition
 
-__version__ = "1.0"
+__version__ = "1.0.1"
 
 __all__ = [
     # Core
