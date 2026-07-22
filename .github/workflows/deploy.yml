@@ -43,6 +43,9 @@ jobs:
   publish-docker:
     needs: test
     runs-on: ubuntu-latest
+    env:
+      # secrets can't be used in `if:` directly, so surface them via env once.
+      HAS_DOCKER: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Read version from pyproject.toml
@@ -59,6 +62,17 @@ jobs:
             exit 0
           fi
           echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin
-          docker build -t "$DH_USER/pixlint:latest" -t "$DH_USER/pixlint:$VERSION" .
+          docker build --build-arg VERSION="$VERSION" \
+            -t "$DH_USER/pixlint:latest" -t "$DH_USER/pixlint:$VERSION" .
           docker push "$DH_USER/pixlint:latest"
           docker push "$DH_USER/pixlint:$VERSION"
+
+      - name: Sync Docker Hub page description (short + README)
+        if: env.HAS_DOCKER == 'true'
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/pixlint
+          short-description: "MCP server to lint, curate & prepare computer-vision datasets from your AI assistant."
+          readme-filepath: ./README.md
