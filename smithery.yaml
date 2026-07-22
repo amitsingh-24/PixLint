@@ -1,0 +1,26 @@
+# Smithery configuration — https://smithery.ai/docs
+# PixLint runs locally over stdio; install it from PyPI (`pip install pixlint`).
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      CV_DATA_DIR:
+        type: string
+        description: Absolute path to the directory PixLint may read datasets from.
+      CV_WORKSPACE:
+        type: string
+        description: Absolute path for outputs (exports, curated datasets).
+    required: []
+  commandFunction: |
+    (config) => ({
+      command: 'pixlint',
+      args: [],
+      env: {
+        ...(config.CV_DATA_DIR ? { CV_DATA_DIR: config.CV_DATA_DIR } : {}),
+        ...(config.CV_WORKSPACE ? { CV_WORKSPACE: config.CV_WORKSPACE } : {})
+      }
+    })
+  exampleConfig:
+    CV_DATA_DIR: /path/to/datasets
+    CV_WORKSPACE: /path/to/workspace
