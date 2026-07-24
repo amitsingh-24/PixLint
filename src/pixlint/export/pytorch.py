@@ -12,7 +12,7 @@ from pixlint.utils.schemas import ExportResult
 _TORCH_AVAILABLE = False
 try:
     import torch  # noqa: F401
-    from torch.utils.data import Dataset, DataLoader  # noqa: F401
+    from torch.utils.data import DataLoader, Dataset  # noqa: F401
     _TORCH_AVAILABLE = True
 except ImportError:
     pass
@@ -170,8 +170,8 @@ def export_pytorch_dataloader(
     if not _TORCH_AVAILABLE:
         return None
 
-    from torch.utils.data import Dataset, DataLoader
     import torchvision.transforms as T
+    from torch.utils.data import DataLoader, Dataset
 
     class _CVDatasetWrapper(Dataset):
         def __init__(self, ds, transform):

@@ -5,9 +5,9 @@ from unittest.mock import patch
 import pytest
 
 from pixlint.core.cloud import (
-    _list_objects,
-    _list_gcs_objects,
     _list_azure_objects,
+    _list_gcs_objects,
+    _list_objects,
     list_s3_objects,
 )
 

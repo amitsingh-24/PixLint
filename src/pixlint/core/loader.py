@@ -6,7 +6,7 @@ from pathlib import Path
 
 from defusedxml import ElementTree as DefusedET
 
-from pixlint.utils.image_io import is_supported_image, get_image_size
+from pixlint.utils.image_io import get_image_size, is_supported_image
 from pixlint.utils.schemas import (
     Annotation,
     CVDatasetInfo,

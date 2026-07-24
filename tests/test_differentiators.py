@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from pixlint.analysis.label_errors import _primary_label, find_label_errors
 from pixlint.analysis.query import query_dataset
 from pixlint.analysis.readiness import dataset_readiness_report
 from pixlint.analysis.slices import discover_slices
-from pixlint.analysis.label_errors import find_label_errors, _primary_label
 
 
 class TestQueryEngine:

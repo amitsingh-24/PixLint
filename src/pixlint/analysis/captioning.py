@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 from pixlint.core.loader import CVDataset
 from pixlint.utils.image_io import read_image
 
@@ -10,7 +9,7 @@ _BLIP_AVAILABLE = False
 try:
     import torch  # noqa: F401
     from PIL import Image as PILImage  # noqa: F401
-    from transformers import BlipProcessor, BlipForConditionalGeneration  # noqa: F401
+    from transformers import BlipForConditionalGeneration, BlipProcessor  # noqa: F401
     _BLIP_AVAILABLE = True
 except ImportError:
     pass
@@ -44,7 +43,7 @@ def generate_captions(
             return [{"error": "BLIP not available. Install: pip install transformers pillow torch"}]
         try:
             import torch
-            from transformers import BlipProcessor, BlipForConditionalGeneration
+            from transformers import BlipForConditionalGeneration, BlipProcessor
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             # Use revision pinning for supply chain security
@@ -93,8 +92,8 @@ def _process_blip_batch(
     max_length: int, results: list[dict[str, Any]],
 ) -> None:
     try:
-        from PIL import Image as PILImage
         import torch
+        from PIL import Image as PILImage
 
         raw_images = []
         valid_ids = []
@@ -131,7 +130,7 @@ def _generate_resnet_tags(dataset: CVDataset) -> list[dict[str, Any]]:
     try:
         import torch
         import torchvision.transforms as T
-        from torchvision.models import resnet50, ResNet50_Weights
+        from torchvision.models import ResNet50_Weights, resnet50
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         weights = ResNet50_Weights.DEFAULT

@@ -6,7 +6,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable
 
-
 from pixlint.utils.hashing import (
     compute_ahash,
     compute_dhash,

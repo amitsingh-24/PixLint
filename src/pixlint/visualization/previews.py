@@ -13,8 +13,8 @@ _MATPLOTLIB_AVAILABLE = False
 try:
     import matplotlib
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.patches as patches  # noqa: F401
+    import matplotlib.pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:
     pass

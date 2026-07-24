@@ -43,7 +43,7 @@ def export_hdf5(
             # Chunk dims must match data layout (n, H, W, 3), not (W, H).
             chunks=(min(chunk_size, n), image_size[1], image_size[0], 3),
         )
-        
+
         # Create image_ids dataset
         ids_dset = f.create_dataset(
             "image_ids", (n,), dtype=h5py.string_dtype(),

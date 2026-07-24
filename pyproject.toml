@@ -97,6 +97,15 @@ where = ["src"]
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+# Pinned rule set: correctness (E/F/W) + import sorting (I). The many opinionated
+# style rules ruff enables in newer versions (blind-except, etc.) are intentionally
+# not enforced — e.g. broad exception handling is deliberate in the security wrapper.
+select = ["E4", "E7", "E9", "F", "I", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]   # re-exports
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

@@ -4,17 +4,17 @@ import os
 
 import numpy as np
 
+from pixlint.augmentation.auto_augment import (
+    apply_autoaugment,
+    apply_randaugment,
+    apply_trivialaugment,
+)
 from pixlint.augmentation.pipeline import augment_dataset, preview_augmentation
 from pixlint.augmentation.transforms import (
+    apply_copypaste,
     apply_cutmix,
     apply_mixup,
     apply_mosaic,
-    apply_copypaste,
-)
-from pixlint.augmentation.auto_augment import (
-    apply_randaugment,
-    apply_trivialaugment,
-    apply_autoaugment,
 )
 
 

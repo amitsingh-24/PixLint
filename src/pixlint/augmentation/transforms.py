@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import random
+
 import cv2
 import numpy as np
-
-
 
 
 def apply_cutmix(

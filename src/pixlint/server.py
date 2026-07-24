@@ -3,82 +3,110 @@ from __future__ import annotations
 import json
 import os
 import threading
-from typing import Any
 from functools import wraps
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from pixlint.analysis.duplicates import find_duplicates
-from pixlint.analysis.quality import analyze_quality
-from pixlint.analysis.integrity import check_integrity
-from pixlint.analysis.distribution import analyze_distribution
-from pixlint.analysis.statistics import compute_statistics, sample_dataset
-from pixlint.analysis.embeddings import compute_embeddings, semantic_search, cluster_dataset
-from pixlint.analysis.outliers import detect_outliers
-from pixlint.analysis.health import dataset_health_score
-from pixlint.augmentation.pipeline import augment_dataset, preview_augmentation
-from pixlint.transformation.format_converter import convert_format
-from pixlint.transformation.resize import resize_dataset
-from pixlint.transformation.normalize import normalize_dataset, compute_channel_stats
-from pixlint.splitting.splitter import split_dataset
-from pixlint.splitting.cross_validation import generate_kfold_splits
-from pixlint.splitting.leakage import detect_leakage
-from pixlint.export.pytorch import export_pytorch
-from pixlint.export.tensorflow import export_tensorflow
-from pixlint.export.ultralytics import export_ultralytics
-from pixlint.export.hdf5 import export_hdf5
-from pixlint.export.extra_formats import (
-    export_webdataset, export_fiftyone, export_cvat_xml, export_labelme_json,
+from pixlint.analysis.active_learning import (
+    diversity_sampling,
+    query_strategy,
+    uncertainty_sampling,
 )
-from pixlint.visualization.previews import preview_images, preview_single_image
-from pixlint.visualization.charts import (
-    plot_distribution, plot_quality_scores, plot_spatial_heatmap,
-    plot_duplicate_groups,
-)
-from pixlint.analysis.active_learning import uncertainty_sampling, diversity_sampling, query_strategy
-from pixlint.analysis.video import extract_frames, video_to_dataset, video_batch_to_datasets, temporal_split
-from pixlint.analysis.captioning import generate_captions, auto_tag_dataset, enrich_metadata
+from pixlint.analysis.autolabel import auto_label
+from pixlint.analysis.captioning import auto_tag_dataset, enrich_metadata, generate_captions
 from pixlint.analysis.diff import dataset_diff
+from pixlint.analysis.distribution import analyze_distribution
+from pixlint.analysis.duplicates import find_duplicates
+from pixlint.analysis.embeddings import cluster_dataset, compute_embeddings, semantic_search
+from pixlint.analysis.health import dataset_health_score
+from pixlint.analysis.integrity import check_integrity
 from pixlint.analysis.label_errors import find_label_errors
+from pixlint.analysis.outliers import detect_outliers
+from pixlint.analysis.quality import analyze_quality
 from pixlint.analysis.query import query_dataset
 from pixlint.analysis.readiness import dataset_readiness_report
 from pixlint.analysis.slices import discover_slices
-from pixlint.core.loader import CVDataset, load_dataset as load_dataset_impl, detect_format
-from pixlint.core.cloud import load_cloud_dataset, list_s3_objects
-from pixlint.core.merge import merge_datasets
+from pixlint.analysis.statistics import compute_statistics, sample_dataset
+from pixlint.analysis.video import (
+    extract_frames,
+    temporal_split,
+    video_batch_to_datasets,
+    video_to_dataset,
+)
+from pixlint.augmentation.pipeline import augment_dataset, preview_augmentation
+from pixlint.core.cloud import list_s3_objects, load_cloud_dataset
+from pixlint.core.curation import (
+    clean_dataset as _clean_dataset,
+)
 from pixlint.core.curation import (
     filter_dataset as _filter_dataset,
-    clean_dataset as _clean_dataset,
+)
+from pixlint.core.curation import (
     remap_classes as _remap_classes,
 )
-from pixlint.export.huggingface import export_huggingface
-from pixlint.analysis.autolabel import auto_label
-from pixlint.core.pipeline import (
-    execute_pipeline, register_pipeline, list_pipelines, get_pipeline, save_pipeline_to_json, load_pipeline_from_json, get_template, list_templates,
-)
-from pixlint.utils.schemas import PipelineDefinition
+from pixlint.core.loader import CVDataset, detect_format
+from pixlint.core.loader import load_dataset as load_dataset_impl
+from pixlint.core.merge import merge_datasets
 from pixlint.core.metadata import (
-    list_datasets as _list_datasets,
     get_dataset_info,
     register_dataset,
+)
+from pixlint.core.metadata import (
+    list_datasets as _list_datasets,
+)
+from pixlint.core.metadata import (
     remove_dataset as _remove_dataset,
 )
-from pixlint.utils.schemas import DatasetFormat
-
+from pixlint.core.pipeline import (
+    execute_pipeline,
+    get_pipeline,
+    get_template,
+    list_pipelines,
+    list_templates,
+    load_pipeline_from_json,
+    register_pipeline,
+    save_pipeline_to_json,
+)
+from pixlint.export.extra_formats import (
+    export_cvat_xml,
+    export_fiftyone,
+    export_labelme_json,
+    export_webdataset,
+)
+from pixlint.export.hdf5 import export_hdf5
+from pixlint.export.huggingface import export_huggingface
+from pixlint.export.pytorch import export_pytorch
+from pixlint.export.tensorflow import export_tensorflow
+from pixlint.export.ultralytics import export_ultralytics
+from pixlint.splitting.cross_validation import generate_kfold_splits
+from pixlint.splitting.leakage import detect_leakage
+from pixlint.splitting.splitter import split_dataset
+from pixlint.transformation.format_converter import convert_format
+from pixlint.transformation.normalize import compute_channel_stats, normalize_dataset
+from pixlint.transformation.resize import resize_dataset
+from pixlint.utils.schemas import DatasetFormat, PipelineDefinition
 from pixlint.utils.security import (
-    SecurityError,
-    validate_dataset_id,
-    validate_dataset_path,
-    validate_output_path,
-    validate_file_path,
-    validate_format,
-    validate_positive_int,
-    validate_ratio_dict,
-    sanitize_output,
+    RESOURCE_LIMITER,
     SECURITY_AUDITOR,
     TOOL_RATE_LIMITER,
-    RESOURCE_LIMITER,
+    SecurityError,
+    sanitize_output,
+    validate_dataset_id,
+    validate_dataset_path,
+    validate_file_path,
+    validate_format,
+    validate_output_path,
+    validate_positive_int,
+    validate_ratio_dict,
 )
+from pixlint.visualization.charts import (
+    plot_distribution,
+    plot_duplicate_groups,
+    plot_quality_scores,
+    plot_spatial_heatmap,
+)
+from pixlint.visualization.previews import preview_images, preview_single_image
 
 mcp = FastMCP("pixlint")
 
@@ -116,12 +144,12 @@ def load_dataset(path: str, format: str = "auto", name: str | None = None) -> st
     # Validate dataset ID/name if provided
     if name:
         name = validate_dataset_id(name)
-    
+
     dataset = load_dataset_impl(str(validated_path), format=validated_format, name=name)
     dataset_id = register_dataset(dataset.to_info())
     with _store_lock:
         _dataset_store[dataset_id] = dataset
-    
+
     # Sanitize output
     return sanitize_output(dataset.to_info().model_dump_json(indent=2))
 
@@ -198,7 +226,7 @@ def find_duplicates_tool(dataset_id: str, methods: list[str] | None = None, thre
         for k, v in thresholds.items():
             if not isinstance(v, (int, float)) or v < 0 or v > 1:
                 return sanitize_output(f"Invalid threshold for {k}: {v}. Must be between 0 and 1")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -215,7 +243,7 @@ def analyze_quality_tool(dataset_id: str, metrics: list[str] | None = None) -> s
         for m in metrics:
             if m not in valid_metrics:
                 return sanitize_output(f"Invalid metric: {m}. Must be one of: {valid_metrics}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -232,7 +260,7 @@ def check_integrity_tool(dataset_id: str, checks: list[str] | None = None) -> st
         for c in checks:
             if c not in valid_checks:
                 return sanitize_output(f"Invalid check: {c}. Must be one of: {valid_checks}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -249,7 +277,7 @@ def analyze_distribution_tool(dataset_id: str, analyses: list[str] | None = None
         for a in analyses:
             if a not in valid_analyses:
                 return sanitize_output(f"Invalid analysis: {a}. Must be one of: {valid_analyses}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -272,7 +300,7 @@ def compute_embeddings_tool(dataset_id: str, model: str = "resnet50") -> str:
     valid_models = {"resnet50", "clip-vit-base", "clip-vit-large", "dinov2"}
     if model not in valid_models:
         return sanitize_output(f"Invalid model: {model}. Must be one of: {valid_models}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -288,7 +316,7 @@ def semantic_search_tool(dataset_id: str, query: str, top_k: int = 10) -> str:
     if not query or not query.strip():
         return sanitize_output("Query cannot be empty")
     query = sanitize_output(query.strip())
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -303,7 +331,7 @@ def cluster_dataset_tool(dataset_id: str, n_clusters: int = 5, method: str = "km
     n_clusters = validate_positive_int(n_clusters, max_value=100)
     if method not in ("kmeans", "dbscan"):
         return sanitize_output(f"Invalid method: {method}. Must be one of: kmeans, dbscan")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -322,7 +350,7 @@ def detect_outliers_tool(dataset_id: str, methods: list[str] | None = None, cont
                 return sanitize_output(f"Invalid method: {m}. Must be one of: {valid_methods}")
     if contamination < 0 or contamination > 1:
         return sanitize_output("Contamination must be between 0 and 1")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -334,7 +362,7 @@ def detect_outliers_tool(dataset_id: str, methods: list[str] | None = None, cont
 def dataset_health_score_tool(dataset_id: str) -> str:
     """Compute overall dataset health score"""
     validated_dataset_id = validate_dataset_id(dataset_id)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -350,7 +378,7 @@ def generate_kfold_tool(dataset_id: str, k: int = 5, strategy: str = "stratified
     valid_strategies = {"stratified", "random", "group"}
     if strategy not in valid_strategies:
         return sanitize_output(f"Invalid strategy: {strategy}. Must be one of: {valid_strategies}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -362,7 +390,7 @@ def generate_kfold_tool(dataset_id: str, k: int = 5, strategy: str = "stratified
 def detect_leakage_tool(dataset_id: str) -> str:
     """Detect data leakage between train/test splits"""
     validated_dataset_id = validate_dataset_id(dataset_id)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -375,7 +403,7 @@ def preview_images_tool(dataset_id: str, n_samples: int = 16, show_annotations: 
     """Preview dataset images in a grid with annotation overlays"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     n_samples = validate_positive_int(n_samples, max_value=100)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -388,7 +416,7 @@ def preview_single_image_tool(dataset_id: str, image_id: str) -> str:
     """Preview a single image with annotation details"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     validated_image_id = validate_dataset_id(image_id)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -434,7 +462,7 @@ def convert_format_tool(dataset_id: str, target_format: str, output_dir: str, im
         if len(image_size) != 2:
             return sanitize_output("image_size must be [width, height]")
         image_size = tuple(image_size)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -454,7 +482,7 @@ def resize_dataset_tool(dataset_id: str, size: list[int], strategy: str = "lette
         return sanitize_output(f"Invalid strategy: {strategy}. Use letterbox, stretch, or crop.")
     if output_dir:
         output_dir = str(validate_output_path(output_dir, allow_create=True))
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -468,7 +496,7 @@ def normalize_dataset_tool(dataset_id: str, mean: list[float] | None = None, std
     validated_dataset_id = validate_dataset_id(dataset_id)
     if output_dir:
         output_dir = str(validate_output_path(output_dir, allow_create=True))
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -495,7 +523,7 @@ def split_dataset_tool(dataset_id: str, strategy: str = "stratified", ratios: di
         ratios = validate_ratio_dict(ratios)
     if seed is not None:
         seed = validate_positive_int(seed, max_value=2**31 - 1)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -512,11 +540,11 @@ def export_dataset_tool(dataset_id: str, format: str, output_dir: str, image_siz
         if len(image_size) != 2:
             return sanitize_output("image_size must be [width, height]")
         image_size = tuple(image_size)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
-    
+
     exporters = {
         "pytorch": lambda: export_pytorch(dataset, output_dir=str(validated_output), image_size=image_size or (640, 640)),
         "tensorflow": lambda: export_tensorflow(dataset, output_dir=str(validated_output), image_size=image_size or (640, 640)),
@@ -536,7 +564,7 @@ def plot_distribution_tool(dataset_id: str, chart_type: str = "bar") -> str:
     validated_dataset_id = validate_dataset_id(dataset_id)
     if chart_type not in ("bar", "pie", "treemap", "radar"):
         return sanitize_output(f"Invalid chart_type: {chart_type}. Use bar, pie, treemap, or radar.")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -582,7 +610,7 @@ def dataset_diff_tool(dataset_id_a: str, dataset_id_b: str) -> str:
     """Compare two datasets and show differences"""
     validated_a = validate_dataset_id(dataset_id_a)
     validated_b = validate_dataset_id(dataset_id_b)
-    
+
     dataset_a = _get_or_load_dataset(validated_a)
     dataset_b = _get_or_load_dataset(validated_b)
     if dataset_a is None:
@@ -600,7 +628,7 @@ def merge_datasets_tool(dataset_ids: list[str], merged_name: str = "merged_datas
     validated_ids = [validate_dataset_id(ds_id) for ds_id in dataset_ids]
     # Validate merged_name
     merged_name = validate_dataset_id(merged_name)
-    
+
     datasets: list[CVDataset] = []
     for ds_id in validated_ids:
         ds = _get_or_load_dataset(ds_id)
@@ -758,7 +786,7 @@ def load_cloud_dataset_tool(provider: str = "s3", bucket: str = "", prefix: str 
     # Validate name if provided
     if name:
         name = validate_dataset_id(name)
-    
+
     try:
         dataset = load_cloud_dataset(provider=provider, bucket=bucket, prefix=prefix, anon=anon, endpoint_url=endpoint_url, connection_string=connection_string, cache_dir=cache_dir, name=name)
         dataset_id = register_dataset(dataset.to_info())
@@ -795,7 +823,7 @@ def generate_captions_tool(dataset_id: str, model: str = "blip", batch_size: int
     if model not in valid_models:
         return sanitize_output(f"Invalid model: {model}. Must be one of: {valid_models}")
     batch_size = validate_positive_int(batch_size, max_value=256)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -810,7 +838,7 @@ def auto_tag_dataset_tool(dataset_id: str, method: str = "resnet") -> str:
     valid_methods = {"resnet", "clip", "efficientnet"}
     if method not in valid_methods:
         return sanitize_output(f"Invalid method: {method}. Must be one of: {valid_methods}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -828,7 +856,7 @@ def enrich_metadata_tool(dataset_id: str, caption_model: str = "blip", tag_metho
         return sanitize_output(f"Invalid caption_model: {caption_model}. Must be one of: {valid_caption_models}")
     if tag_method not in valid_tag_methods:
         return sanitize_output(f"Invalid tag_method: {tag_method}. Must be one of: {valid_tag_methods}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -847,7 +875,7 @@ def uncertainty_sampling_tool(dataset_id: str, method: str = "entropy", n: int =
     valid_models = {"resnet50", "resnet101", "clip-vit-base", "clip-vit-large", "dinov2"}
     if model not in valid_models:
         return sanitize_output(f"Invalid model: {model}. Must be one of: {valid_models}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -863,7 +891,7 @@ def diversity_sampling_tool(dataset_id: str, n: int = 10, model: str = "resnet50
     valid_models = {"resnet50", "resnet101", "clip-vit-base", "clip-vit-large", "dinov2"}
     if model not in valid_models:
         return sanitize_output(f"Invalid model: {model}. Must be one of: {valid_models}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -884,7 +912,7 @@ def query_strategy_tool(dataset_id: str, strategy: str = "combined", n: int = 10
         return sanitize_output(f"Invalid model: {model}. Must be one of: {valid_models}")
     if alpha < 0 or alpha > 1:
         return sanitize_output("alpha must be between 0 and 1")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -901,7 +929,7 @@ def export_webdataset_tool(dataset_id: str, output_dir: str, image_size: list[in
         return sanitize_output("image_size must be [width, height]")
     image_size = tuple(image_size)
     shard_size = validate_positive_int(shard_size, max_value=100000)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -918,7 +946,7 @@ def export_fiftyone_tool(dataset_id: str, output_dir: str, export_format: str = 
     valid_formats = {"coco", "voc", "yolo", "kitti", "tfrecord", "webdataset", "labelme", "cvat"}
     if export_format.lower() not in valid_formats:
         return sanitize_output(f"Invalid export_format: {export_format}. Must be one of: {sorted(valid_formats)}")
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -931,7 +959,7 @@ def export_cvat_xml_tool(dataset_id: str, output_path: str) -> str:
     """Export dataset to CVAT XML format"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     validated_output = validate_output_path(output_path, allow_create=True)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -944,7 +972,7 @@ def export_labelme_json_tool(dataset_id: str, output_dir: str) -> str:
     """Export dataset to LabelMe JSON format"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     validated_output = validate_output_path(output_dir, allow_create=True)
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -1049,7 +1077,7 @@ def execute_pipeline_tool(dataset_id: str, pipeline: dict, work_dir: str | None 
     # Validate work_dir if provided
     if work_dir:
         work_dir = str(validate_output_path(work_dir, allow_create=True))
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
@@ -1066,7 +1094,7 @@ def execute_template_tool(dataset_id: str, template_id: str, work_dir: str | Non
     # Validate work_dir if provided
     if work_dir:
         work_dir = str(validate_output_path(work_dir, allow_create=True))
-    
+
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")

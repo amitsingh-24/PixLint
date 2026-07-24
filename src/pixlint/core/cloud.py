@@ -8,7 +8,6 @@ from typing import Any
 
 from pixlint.core.loader import CVDataset, load_dataset
 
-
 _S3_AVAILABLE = False
 try:
     import boto3

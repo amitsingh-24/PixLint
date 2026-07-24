@@ -13,16 +13,16 @@ _MATPLOTLIB_AVAILABLE = False
 try:
     import matplotlib
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches  # noqa: F401
+    import matplotlib.pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:
     pass
 
 _PLOTLY_AVAILABLE = False
 try:
-    import plotly.graph_objects as go
     import plotly.express as px  # noqa: F401
+    import plotly.graph_objects as go
     import plotly.io as pio  # noqa: F401
     _PLOTLY_AVAILABLE = True
 except ImportError:

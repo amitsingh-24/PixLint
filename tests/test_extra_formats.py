@@ -7,12 +7,12 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from pixlint.export.extra_formats import (
+    _build_coco_json,
+    _SimpleTarWriter,
     export_cvat_xml,
     export_fiftyone,
     export_labelme_json,
     export_webdataset,
-    _build_coco_json,
-    _SimpleTarWriter,
 )
 from pixlint.utils.schemas import ExportResult
 

@@ -3,15 +3,14 @@ from __future__ import annotations
 import csv
 import json
 import os
+import xml.etree.ElementTree as ET
 from typing import Any
 
 import cv2
 import numpy as np
-import xml.etree.ElementTree as ET
 
 from pixlint.core.loader import CVDataset
 from pixlint.utils.schemas import FormatConversionResult
-
 
 CONVERSION_MATRIX: dict[str, list[str]] = {
     "coco": ["voc", "yolo", "kitti", "csv"],

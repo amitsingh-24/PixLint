@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pixlint.analysis.embeddings import compute_embeddings
-from pixlint.visualization.embeddings_viz import reduce_dimensions, plot_embeddings
+from pixlint.visualization.embeddings_viz import plot_embeddings, reduce_dimensions
 
 
 class TestEmbeddingViz:

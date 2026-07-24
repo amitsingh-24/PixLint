@@ -2,21 +2,21 @@ from __future__ import annotations
 
 import numpy as np
 
-from pixlint.visualization.previews import (
-    preview_images,
-    preview_single_image,
-    draw_annotations,
-)
-from pixlint.visualization.charts import (
-    plot_distribution,
-    plot_quality_scores,
-    plot_spatial_heatmap,
-    plot_duplicate_groups,
-    plot_class_balance_radar,
-)
 from pixlint.analysis.diff import dataset_diff
 from pixlint.utils.progress import ProgressTracker, track_progress
 from pixlint.utils.schemas import Annotation
+from pixlint.visualization.charts import (
+    plot_class_balance_radar,
+    plot_distribution,
+    plot_duplicate_groups,
+    plot_quality_scores,
+    plot_spatial_heatmap,
+)
+from pixlint.visualization.previews import (
+    draw_annotations,
+    preview_images,
+    preview_single_image,
+)
 
 
 class TestPreviews:
@@ -50,9 +50,10 @@ class TestPreviews:
         assert result.shape == image.shape
 
     def test_preview_empty_dataset(self):
+        import tempfile
+
         from pixlint.core.loader import CVDataset
         from pixlint.utils.schemas import DatasetFormat
-        import tempfile
         with tempfile.TemporaryDirectory() as d:
             ds = CVDataset(d, format=DatasetFormat.FOLDER)
             result = preview_images(ds)

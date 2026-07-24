@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pixlint.splitting.splitter import split_dataset, sample_split
 from pixlint.splitting.cross_validation import generate_kfold_splits
 from pixlint.splitting.leakage import detect_leakage
+from pixlint.splitting.splitter import sample_split, split_dataset
 
 
 class TestSplitter:

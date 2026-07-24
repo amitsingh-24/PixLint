@@ -5,7 +5,6 @@ from pathlib import Path
 
 from pixlint.utils.schemas import CVDatasetInfo
 
-
 _dataset_registry: dict[str, CVDatasetInfo] = {}
 _registry_lock = threading.Lock()
 

@@ -5,8 +5,12 @@ import os
 import numpy as np
 
 from pixlint.transformation.format_converter import convert_format
-from pixlint.transformation.resize import resize_dataset, resize_image, _letterbox
-from pixlint.transformation.normalize import normalize_dataset, compute_channel_stats, normalize_image
+from pixlint.transformation.normalize import (
+    compute_channel_stats,
+    normalize_dataset,
+    normalize_image,
+)
+from pixlint.transformation.resize import _letterbox, resize_dataset, resize_image
 
 
 class TestFormatConverter:

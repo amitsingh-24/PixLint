@@ -12,7 +12,7 @@ from typing import Any
 import cv2
 import streamlit as st
 
-from pixlint.analysis.captioning import generate_captions, enrich_metadata
+from pixlint.analysis.captioning import enrich_metadata, generate_captions
 from pixlint.analysis.distribution import analyze_distribution
 from pixlint.analysis.duplicates import find_duplicates
 from pixlint.analysis.health import dataset_health_score
@@ -237,10 +237,10 @@ with tab_export:
                     from pixlint.export.extra_formats import export_labelme_json
                     export_result: Any = export_labelme_json(ds, output_dir=output_dir)  # type: ignore[arg-type, no-redef]
                 else:
+                    from pixlint.export.hdf5 import export_hdf5
                     from pixlint.export.pytorch import export_pytorch
                     from pixlint.export.tensorflow import export_tensorflow
                     from pixlint.export.ultralytics import export_ultralytics
-                    from pixlint.export.hdf5 import export_hdf5
                     if export_format == "pytorch":
                         export_result: Any = export_pytorch(ds, output_dir, image_size=(640, 640))  # type: ignore[arg-type, no-redef]
                     elif export_format == "tensorflow":

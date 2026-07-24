@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from pixlint.analysis.quality import analyze_quality
 
 

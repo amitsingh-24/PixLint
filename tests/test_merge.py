@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pixlint.core.merge import merge_datasets, _unify_labels, _remap_annotations
+from pixlint.core.merge import _remap_annotations, _unify_labels, merge_datasets
 from pixlint.utils.schemas import Annotation
 
 
@@ -73,9 +73,10 @@ class TestMerge:
             merge_datasets([folder_dataset])
 
     def test_merge_empty_datasets(self, folder_dataset, coco_dataset):
+        import tempfile
+
         from pixlint.core.loader import CVDataset
         from pixlint.utils.schemas import DatasetFormat
-        import tempfile
         with tempfile.TemporaryDirectory() as d:
             empty = CVDataset(d, format=DatasetFormat.FOLDER)
             result = merge_datasets([folder_dataset, empty], merged_name="test_empty")

@@ -5,10 +5,10 @@ import os
 
 import pytest
 
+from pixlint.export.hdf5 import export_hdf5
 from pixlint.export.pytorch import export_pytorch
 from pixlint.export.tensorflow import export_tensorflow
 from pixlint.export.ultralytics import export_ultralytics
-from pixlint.export.hdf5 import export_hdf5
 
 _HAS_H5PY = importlib.util.find_spec("h5py") is not None
 

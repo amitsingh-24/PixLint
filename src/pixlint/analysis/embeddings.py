@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 import numpy as np
 
 from pixlint.core.loader import CVDataset
@@ -15,7 +14,7 @@ _TORCH_AVAILABLE = False
 try:
     import torch
     import torchvision.transforms as T
-    from torchvision.models import resnet50, ResNet50_Weights
+    from torchvision.models import ResNet50_Weights, resnet50
     _TORCH_AVAILABLE = True
 except ImportError:
     pass
@@ -36,7 +35,7 @@ except ImportError:
 
 _SKLEARN_AVAILABLE = False
 try:
-    from sklearn.cluster import KMeans, DBSCAN
+    from sklearn.cluster import DBSCAN, KMeans
     from sklearn.metrics import silhouette_score
     _SKLEARN_AVAILABLE = True
 except ImportError:

@@ -6,9 +6,9 @@ import re
 import threading
 import time
 from contextlib import contextmanager
+from functools import wraps
 from pathlib import Path
 from typing import Any, Optional
-from functools import wraps
 
 
 class SecurityError(Exception):

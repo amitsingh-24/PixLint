@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-
 from pixlint.analysis.active_learning import (
+    _filter_dataset_by_ids,
+    _get_labels_for_images,
     diversity_sampling,
     query_strategy,
     uncertainty_sampling,
-    _get_labels_for_images,
-    _filter_dataset_by_ids,
 )
 from pixlint.utils.schemas import EmbeddingResult
 

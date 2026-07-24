@@ -7,7 +7,7 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
 from pixlint.core.loader import CVDataset
-from pixlint.utils.hashing import md5_hash, compute_phash, hamming_distance
+from pixlint.utils.hashing import compute_phash, hamming_distance, md5_hash
 from pixlint.utils.image_io import read_image
 from pixlint.utils.schemas import DuplicateGroup, DuplicateReport
 
@@ -15,7 +15,7 @@ _CLIP_AVAILABLE = False
 try:
     import torch
     import torchvision.transforms as T
-    from torchvision.models import resnet50, ResNet50_Weights
+    from torchvision.models import ResNet50_Weights, resnet50
     _CLIP_AVAILABLE = True
 except ImportError:
     pass

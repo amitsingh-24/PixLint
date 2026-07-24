@@ -7,7 +7,6 @@ import numpy as np
 from pixlint.analysis.embeddings import compute_embeddings
 from pixlint.core.loader import CVDataset
 
-
 _SKLEARN_AVAILABLE = False
 try:
     from sklearn.ensemble import GradientBoostingClassifier

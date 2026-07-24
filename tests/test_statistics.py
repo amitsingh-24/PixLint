@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pixlint.analysis.statistics import sample_dataset, compute_statistics
+from pixlint.analysis.statistics import compute_statistics, sample_dataset
 
 
 class TestSampling:

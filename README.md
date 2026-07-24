@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/pixlint-logo.png" alt="PixLint" width="128" height="128" />
+  <img src="https://raw.githubusercontent.com/amitsingh-24/PixLint/main/assets/pixlint-logo.png" alt="PixLint" width="128" height="128" />
 </p>
 
 # PixLint

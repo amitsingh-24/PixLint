@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pixlint.analysis.embeddings import compute_embeddings, cluster_dataset, semantic_search
+from pixlint.analysis.embeddings import cluster_dataset, compute_embeddings, semantic_search
 
 
 class TestEmbeddings:

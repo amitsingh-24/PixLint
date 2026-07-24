@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-
 from pixlint.analysis.captioning import (
-    generate_captions,
+    _BLIP_AVAILABLE,
     auto_tag_dataset,
     enrich_metadata,
-    _BLIP_AVAILABLE,
+    generate_captions,
 )
 
 
@@ -15,9 +14,10 @@ class TestCaptioning:
     def test_generate_captions_no_blip(self):
         if not _BLIP_AVAILABLE:
             with patch("pixlint.analysis.captioning._BLIP_AVAILABLE", False):
+                import tempfile
+
                 from pixlint.core.loader import CVDataset
                 from pixlint.utils.schemas import DatasetFormat
-                import tempfile
                 with tempfile.TemporaryDirectory() as d:
                     ds = CVDataset(d, format=DatasetFormat.FOLDER)
                     result = generate_captions(ds, model="blip")

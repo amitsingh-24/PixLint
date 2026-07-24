@@ -60,8 +60,8 @@ def auto_label(
 
     import torch
     from torchvision.models.detection import (
-        fasterrcnn_resnet50_fpn,
         FasterRCNN_ResNet50_FPN_Weights,
+        fasterrcnn_resnet50_fpn,
     )
     from torchvision.transforms.functional import to_tensor
 

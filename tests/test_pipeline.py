@@ -3,9 +3,9 @@ from __future__ import annotations
 import os
 import tempfile
 
-
 from pixlint.core.pipeline import (
     _build_dag,
+    _get_operation_fn,
     _topological_sort,
     execute_pipeline,
     get_template,
@@ -14,9 +14,8 @@ from pixlint.core.pipeline import (
     load_pipeline_from_json,
     register_pipeline,
     save_pipeline_to_json,
-    _get_operation_fn,
 )
-from pixlint.utils.schemas import PipelineDefinition, PipelineStep, PipelineResult
+from pixlint.utils.schemas import PipelineDefinition, PipelineResult, PipelineStep
 
 
 class TestPipelineCore:

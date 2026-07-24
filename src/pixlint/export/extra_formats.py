@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+import xml.etree.ElementTree as ET
 from typing import Any
 
 import cv2
-import xml.etree.ElementTree as ET
 
 from pixlint.core.loader import CVDataset
 from pixlint.utils.schemas import ExportResult

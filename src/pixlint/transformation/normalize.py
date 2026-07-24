@@ -8,7 +8,6 @@ import numpy as np
 from pixlint.core.loader import CVDataset
 from pixlint.utils.schemas import NormalizeResult
 
-
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
