@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/pixlint-logo.png" alt="PixLint" width="128" height="128" />
+</p>
+
 # PixLint
 
 **Lint, curate, and prepare computer-vision datasets — right from your AI assistant.**
