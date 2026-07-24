@@ -6,8 +6,9 @@ Uses ResNet50 or CLIP embeddings for image similarity search.
 """
 
 import os
+
+from pixlint.analysis.embeddings import cluster_dataset, compute_embeddings, semantic_search
 from pixlint.core.loader import load_dataset
-from pixlint.analysis.embeddings import compute_embeddings, semantic_search, cluster_dataset
 
 DATA_DIR = os.environ.get("CV_DATA_DIR", "/tmp/demo_data")
 

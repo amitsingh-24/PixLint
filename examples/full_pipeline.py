@@ -6,16 +6,17 @@ Demonstrates: load → analyze → augment → split → export → pipeline
 """
 
 import os
-from pixlint.core.loader import load_dataset
-from pixlint.analysis.quality import analyze_quality
-from pixlint.analysis.duplicates import find_duplicates
+
 from pixlint.analysis.distribution import analyze_distribution
+from pixlint.analysis.duplicates import find_duplicates
+from pixlint.analysis.quality import analyze_quality
 from pixlint.augmentation.pipeline import augment_dataset
-from pixlint.transformation.resize import resize_dataset
-from pixlint.transformation.normalize import normalize_dataset, compute_channel_stats
-from pixlint.splitting.splitter import split_dataset
-from pixlint.export.pytorch import export_pytorch
+from pixlint.core.loader import load_dataset
 from pixlint.core.pipeline import execute_pipeline, get_template
+from pixlint.export.pytorch import export_pytorch
+from pixlint.splitting.splitter import split_dataset
+from pixlint.transformation.normalize import compute_channel_stats, normalize_dataset
+from pixlint.transformation.resize import resize_dataset
 
 DATA_DIR = os.environ.get("CV_DATA_DIR", "/tmp/demo_data")
 WORK_DIR = os.environ.get("CV_WORKSPACE", "/tmp/demo_workspace")

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This server (v1.0.2) uses the **Model Context Protocol (MCP)**. By default it runs over **stdio** as a subprocess of your MCP client — no network, no HTTP, no auth tokens. It can also be hosted over the network (`streamable-http` / `sse`) with bearer-token auth for remote clients — see [Remote/HTTP Server](#remotehttp-server) below.
+This server (v1.0.3) uses the **Model Context Protocol (MCP)**. By default it runs over **stdio** as a subprocess of your MCP client — no network, no HTTP, no auth tokens. It can also be hosted over the network (`streamable-http` / `sse`) with bearer-token auth for remote clients — see [Remote/HTTP Server](#remotehttp-server) below.
 
 ## Supported Clients
 

@@ -5,13 +5,15 @@ PixLint — Active Learning Loop
 Iteratively select most informative samples for labeling.
 """
 
-from pixlint.core.loader import load_dataset
+import os
+
 from pixlint.analysis.active_learning import (
-    uncertainty_sampling,
     diversity_sampling,
-    query_strategy
+    query_strategy,
+    uncertainty_sampling,
 )
 from pixlint.analysis.embeddings import compute_embeddings
+from pixlint.core.loader import load_dataset
 
 DATA_DIR = os.environ.get("CV_DATA_DIR", "/tmp/demo_data")
 
@@ -20,8 +22,9 @@ def main():
     pool = load_dataset(os.path.join(DATA_DIR, "unlabeled_pool"))
     print(f"Pool: {len(pool)} unlabeled images")
 
-    # Compute embeddings once (for diversity)
+    # Compute embeddings once to warm the cache used by the sampling strategies.
     emb = compute_embeddings(pool, model="resnet50")
+    print(f"Computed {len(emb.embeddings)} embeddings")
 
     for round_num in range(1, 6):
         print(f"\n=== Round {round_num} ===")

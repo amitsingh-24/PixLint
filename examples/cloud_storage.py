@@ -5,7 +5,6 @@ PixLint — Cloud Storage (S3/GCS/Azure)
 Load datasets directly from cloud buckets. Credentials from env vars only.
 """
 
-import os
 from pixlint.core.cloud import load_cloud_dataset
 
 # REQUIRED: Credentials from environment (never from params!)

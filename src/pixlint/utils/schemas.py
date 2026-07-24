@@ -20,7 +20,8 @@ class DatasetFormat(str, Enum):
 class Annotation(BaseModel):
     label: str
     bbox: tuple[float, float, float, float] | None = None
-    segmentation: list[list[float]] | None = None
+    # Polygon form (list of [x,y,...] rings) or COCO RLE crowd form ({"counts","size"}).
+    segmentation: list[list[float]] | dict[str, Any] | None = None
     keypoints: list[float] | None = None
     area: float | None = None
     iscrowd: bool = False

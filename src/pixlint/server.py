@@ -1833,7 +1833,7 @@ async def health_check(request):
     return JSONResponse({
         "status": "ok",
         "service": "pixlint",
-        "version": "1.0.2",
+        "version": "1.0.3",
         "tools": len(mcp._tool_manager._tools),
         "datasets_loaded": len(_dataset_store),
     })

@@ -6,6 +6,7 @@ Load a dataset, analyze it, and print a summary.
 """
 
 import os
+
 from pixlint.core.loader import load_dataset
 
 # Use env var or fallback for demo
@@ -14,7 +15,7 @@ DATA_DIR = os.environ.get("CV_DATA_DIR", "/tmp/demo_data")
 def main():
     # Load with auto-detect (COCO, VOC, YOLO, KITTI, folder)
     ds = load_dataset(os.path.join(DATA_DIR, "your_dataset"))
-    
+
     # Print info
     info = ds.to_info()
     print(f"Dataset: {info.name}")

@@ -49,7 +49,8 @@ def draw_annotations(
             cv2.rectangle(result, (x1, y1 - th - 4), (x1 + tw + 4, y1), color, -1)
             cv2.putText(result, label_text, (x1 + 2, y1 - 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        if ann.segmentation:
+        # Only polygon segmentation is drawable here; skip COCO RLE crowd masks (dict form).
+        if ann.segmentation and isinstance(ann.segmentation, list):
             for seg in ann.segmentation:
                 pts = np.array(seg, dtype=np.int32).reshape(-1, 2)
                 cv2.polylines(result, [pts], True, color, 2)

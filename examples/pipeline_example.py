@@ -3,7 +3,9 @@
 """Create and execute a custom pipeline."""
 from pixlint.core.loader import load_dataset
 from pixlint.core.pipeline import (
-    execute_pipeline, get_template, save_pipeline_to_json,
+    execute_pipeline,
+    get_template,
+    save_pipeline_to_json,
 )
 from pixlint.utils.schemas import PipelineDefinition, PipelineStep
 
