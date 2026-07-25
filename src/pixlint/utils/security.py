@@ -525,7 +525,7 @@ class CredentialFilter:
         if not isinstance(data, dict):
             return data
 
-        result = {}
+        result: dict[str, Any] = {}
         for key, value in data.items():
             key_str = cls.sanitize(str(key))
             if isinstance(value, dict):
@@ -609,13 +609,13 @@ class ResourceLimiter:
             if self._active_count >= self.max_concurrent:
                 return False
             self._active_count += 1
-            self._start_times[threading.current_thread().ident] = time.time()
+            self._start_times[threading.get_ident()] = time.time()
             return True
 
     def release(self) -> None:
         with self._lock:
             self._active_count = max(0, self._active_count - 1)
-            self._start_times.pop(threading.current_thread().ident, None)
+            self._start_times.pop(threading.get_ident(), None)
 
     def check_limits(self, tool_name: str) -> None:
         """Check if tool execution should be terminated"""

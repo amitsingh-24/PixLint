@@ -80,7 +80,8 @@ def export_webdataset(
             if yolo_anns:
                 sample["txt"] = "\n".join(yolo_anns).encode()
 
-            writer.write(sample)
+            if writer is not None:
+                writer.write(sample)
             export_count += 1
             ann_count += len(img.annotations)
 
@@ -221,7 +222,7 @@ def export_labelme_json(
             continue
         h, w = image.shape[:2]
 
-        shapes = []
+        shapes: list[dict[str, Any]] = []
         for ann in img.annotations:
             if ann.bbox:
                 x1, y1, x2, y2 = ann.bbox

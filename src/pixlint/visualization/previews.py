@@ -52,6 +52,10 @@ def draw_annotations(
         # Only polygon segmentation is drawable here; skip COCO RLE crowd masks (dict form).
         if ann.segmentation and isinstance(ann.segmentation, list):
             for seg in ann.segmentation:
+                # A valid polygon needs an even count of >=6 coords (>=3 points);
+                # skip malformed rings so reshape(-1, 2) can't raise.
+                if not isinstance(seg, (list, tuple)) or len(seg) < 6 or len(seg) % 2 != 0:
+                    continue
                 pts = np.array(seg, dtype=np.int32).reshape(-1, 2)
                 cv2.polylines(result, [pts], True, color, 2)
     return result
@@ -129,7 +133,7 @@ def _preview_images_opencv(
         h, w = image.shape[:2]
         _, buffer = cv2.imencode(".jpg", cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         import base64
-        img_b64 = base64.b64encode(buffer).decode()
+        img_b64 = base64.b64encode(buffer.tobytes()).decode()
         previews.append({
             "image_id": img_record.image_id,
             "width": w,

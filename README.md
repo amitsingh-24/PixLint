@@ -125,7 +125,7 @@ See the [Security Guide](docs/security.md) for the full threat model and the rec
 | [Security Guide](docs/security.md) | Threat model, configuration, hosting |
 | [Pipeline Templates](docs/pipeline_templates.md) | Pre-built and custom pipelines |
 
-Runnable scripts live in [`examples/`](examples/).
+Runnable scripts live in [`examples/`](examples/). See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ---
 

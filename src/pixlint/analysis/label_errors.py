@@ -103,7 +103,12 @@ def find_label_errors(
     suspects: list[LabelErrorItem] = []
     for row, iid in enumerate(ids):
         given = label_map[iid]
-        neighbor_labels = [label_map[ids[j]] for j in indices[row][1:]]  # exclude self
+        if given is None:  # unlabeled images can't be label-error suspects
+            continue
+        # exclude self; drop any None-labeled neighbors from the vote
+        neighbor_labels = [
+            lbl for j in indices[row][1:] if (lbl := label_map[ids[j]]) is not None
+        ]
         if not neighbor_labels:
             continue
         counts = Counter(neighbor_labels)

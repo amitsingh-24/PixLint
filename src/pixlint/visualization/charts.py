@@ -199,7 +199,7 @@ def plot_duplicate_groups(
         return {"error": "No duplicate groups found", "total_images": report.total_duplicate_images}
 
     methods = [g.method for g in groups]
-    method_counts = {}
+    method_counts: dict[str, int] = {}
     for m in methods:
         method_counts[m] = method_counts.get(m, 0) + 1
 

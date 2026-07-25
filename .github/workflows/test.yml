@@ -45,7 +45,7 @@ jobs:
       - name: Type check with mypy
         run: |
           pip install mypy
-          mypy src/ --ignore-missing-imports || true
+          mypy
 
       - name: Test with pytest
         run: |

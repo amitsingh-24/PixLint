@@ -35,26 +35,30 @@ def analyze_quality(
         scores: dict[str, float] = {}
         issues: list[str] = []
 
+        # Convert to grayscale once and reuse across blur/exposure/noise/contrast
+        # instead of re-converting the same array in each analyzer.
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
         if "blur" in metrics:
-            blur_score, blur_label = _analyze_blur(image)
+            blur_score, blur_label = _analyze_blur(image, gray)
             scores["blur"] = blur_score
             if blur_label == "blurry":
                 issues.append("blurry")
 
         if "exposure" in metrics:
-            exp_score, exp_label = _analyze_exposure(image)
+            exp_score, exp_label = _analyze_exposure(image, gray)
             scores["exposure"] = exp_score
             if exp_label != "good":
                 issues.append(exp_label)
 
         if "noise" in metrics:
-            noise_score, noise_label = _analyze_noise(image)
+            noise_score, noise_label = _analyze_noise(image, gray)
             scores["noise"] = noise_score
             if noise_label == "noisy":
                 issues.append("noisy")
 
         if "contrast" in metrics:
-            contrast_score, contrast_label = _analyze_contrast(image)
+            contrast_score, contrast_label = _analyze_contrast(image, gray)
             scores["contrast"] = contrast_score
             if contrast_label == "low_contrast":
                 issues.append("low_contrast")
@@ -108,8 +112,9 @@ def analyze_quality(
     )
 
 
-def _analyze_blur(image: np.ndarray) -> tuple[float, str]:
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+def _analyze_blur(image: np.ndarray, gray: np.ndarray | None = None) -> tuple[float, str]:
+    if gray is None:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
 
     if laplacian_var > 100:
@@ -123,8 +128,9 @@ def _analyze_blur(image: np.ndarray) -> tuple[float, str]:
     return round(normalized_score, 2), label
 
 
-def _analyze_exposure(image: np.ndarray) -> tuple[float, str]:
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+def _analyze_exposure(image: np.ndarray, gray: np.ndarray | None = None) -> tuple[float, str]:
+    if gray is None:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     mean_brightness = gray.mean()
 
     if mean_brightness < 40:
@@ -142,8 +148,9 @@ def _analyze_exposure(image: np.ndarray) -> tuple[float, str]:
     return round(normalized_score, 2), label
 
 
-def _analyze_noise(image: np.ndarray) -> tuple[float, str]:
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+def _analyze_noise(image: np.ndarray, gray: np.ndarray | None = None) -> tuple[float, str]:
+    if gray is None:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     fft = np.fft.fft2(gray.astype(np.float32))
     fft_shift = np.fft.fftshift(fft)
     magnitude = np.abs(fft_shift)
@@ -167,9 +174,10 @@ def _analyze_noise(image: np.ndarray) -> tuple[float, str]:
     return round(normalized, 2), label
 
 
-def _analyze_contrast(image: np.ndarray) -> tuple[float, str]:
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY).astype(np.float32)
-    rms_contrast = gray.std()
+def _analyze_contrast(image: np.ndarray, gray: np.ndarray | None = None) -> tuple[float, str]:
+    if gray is None:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    rms_contrast = gray.astype(np.float32).std()
     normalized = min(rms_contrast / 64.0, 1.0) * 100
 
     if normalized < 20:

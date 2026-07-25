@@ -61,7 +61,7 @@ from pixlint.visualization.charts import (
 from pixlint.visualization.embeddings_viz import plot_embeddings
 from pixlint.visualization.previews import preview_images, preview_single_image
 
-__version__ = "1.0.3"
+__version__ = "1.1.0"
 
 __all__ = [
     # Core

@@ -4,7 +4,7 @@ import json
 import os
 import threading
 from functools import wraps
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 
@@ -256,10 +256,10 @@ def check_integrity_tool(dataset_id: str, checks: list[str] | None = None) -> st
     """Check dataset integrity (corrupt images, missing labels, annotation bounds)"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     if checks:
-        valid_checks = {"corrupt", "missing_labels", "annotation_bounds", "empty_images"}
+        valid_checks = {"corrupt", "missing_labels", "annotation_bounds"}
         for c in checks:
             if c not in valid_checks:
-                return sanitize_output(f"Invalid check: {c}. Must be one of: {valid_checks}")
+                return sanitize_output(f"Invalid check: {c}. Must be one of: {sorted(valid_checks)}")
 
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
@@ -273,10 +273,14 @@ def analyze_distribution_tool(dataset_id: str, analyses: list[str] | None = None
     """Analyze class distribution, spatial heatmap, label co-occurrence, complexity"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     if analyses:
-        valid_analyses = {"class_dist", "spatial", "cooccurrence", "complexity"}
+        # Accept friendly aliases and normalize to the tokens analyze_distribution
+        # actually checks (previously "cooccurrence" silently did nothing).
+        alias = {"class_dist": "class_counts", "cooccurrence": "co_occurrence"}
+        analyses = [alias.get(a, a) for a in analyses]
+        valid_analyses = {"class_counts", "spatial", "co_occurrence", "complexity"}
         for a in analyses:
             if a not in valid_analyses:
-                return sanitize_output(f"Invalid analysis: {a}. Must be one of: {valid_analyses}")
+                return sanitize_output(f"Invalid analysis: {a}. Must be one of: {sorted(valid_analyses)}")
 
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
@@ -458,15 +462,16 @@ def convert_format_tool(dataset_id: str, target_format: str, output_dir: str, im
     # Validate output path
     validated_output = validate_output_path(output_dir, allow_create=True)
     # Validate image_size if provided
+    size_t: tuple[int, int] | None = None
     if image_size:
         if len(image_size) != 2:
             return sanitize_output("image_size must be [width, height]")
-        image_size = tuple(image_size)
+        size_t = (image_size[0], image_size[1])
 
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
-    result = convert_format(dataset, target_format=validated_format, output_dir=str(validated_output), image_size=image_size)
+    result = convert_format(dataset, target_format=validated_format, output_dir=str(validated_output), image_size=size_t)
     return sanitize_output(result.model_dump_json(indent=2))
 
 
@@ -476,7 +481,7 @@ def resize_dataset_tool(dataset_id: str, size: list[int], strategy: str = "lette
     validated_dataset_id = validate_dataset_id(dataset_id)
     if len(size) != 2:
         return sanitize_output("size must be [width, height]")
-    size_tuple = tuple(size)
+    size_tuple: tuple[int, int] = (size[0], size[1])
     # Validate strategy
     if strategy not in ("letterbox", "stretch", "crop"):
         return sanitize_output(f"Invalid strategy: {strategy}. Use letterbox, stretch, or crop.")
@@ -536,20 +541,21 @@ def export_dataset_tool(dataset_id: str, format: str, output_dir: str, image_siz
     """Export dataset in various formats (pytorch, tensorflow, ultralytics, hdf5)"""
     validated_dataset_id = validate_dataset_id(dataset_id)
     validated_output = validate_output_path(output_dir, allow_create=True)
+    size_t: tuple[int, int] = (640, 640)
     if image_size:
         if len(image_size) != 2:
             return sanitize_output("image_size must be [width, height]")
-        image_size = tuple(image_size)
+        size_t = (image_size[0], image_size[1])
 
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
 
     exporters = {
-        "pytorch": lambda: export_pytorch(dataset, output_dir=str(validated_output), image_size=image_size or (640, 640)),
-        "tensorflow": lambda: export_tensorflow(dataset, output_dir=str(validated_output), image_size=image_size or (640, 640)),
-        "ultralytics": lambda: export_ultralytics(dataset, output_dir=str(validated_output), image_size=(image_size or (640, 640))[0]),
-        "hdf5": lambda: export_hdf5(dataset, output_path=os.path.join(str(validated_output), "dataset.h5"), image_size=image_size or (640, 640)),
+        "pytorch": lambda: export_pytorch(dataset, output_dir=str(validated_output), image_size=size_t),
+        "tensorflow": lambda: export_tensorflow(dataset, output_dir=str(validated_output), image_size=size_t),
+        "ultralytics": lambda: export_ultralytics(dataset, output_dir=str(validated_output), image_size=size_t[0]),
+        "hdf5": lambda: export_hdf5(dataset, output_path=os.path.join(str(validated_output), "dataset.h5"), image_size=size_t),
     }
     exporter = exporters.get(format)
     if exporter is None:
@@ -927,13 +933,13 @@ def export_webdataset_tool(dataset_id: str, output_dir: str, image_size: list[in
     validated_output = validate_output_path(output_dir, allow_create=True)
     if len(image_size) != 2:
         return sanitize_output("image_size must be [width, height]")
-    image_size = tuple(image_size)
+    size_t: tuple[int, int] = (image_size[0], image_size[1])
     shard_size = validate_positive_int(shard_size, max_value=100000)
 
     dataset = _get_or_load_dataset(validated_dataset_id)
     if dataset is None:
         return sanitize_output(f"Dataset '{validated_dataset_id}' not found.")
-    result = export_webdataset(dataset, output_dir=str(validated_output), image_size=image_size, shard_size=shard_size)
+    result = export_webdataset(dataset, output_dir=str(validated_output), image_size=size_t, shard_size=shard_size)
     return sanitize_output(result.model_dump_json(indent=2))
 
 
@@ -987,15 +993,16 @@ def extract_frames_tool(video_path: str, output_dir: str | None = None, frame_in
     if output_dir is None:
         output_dir = os.path.join(os.path.dirname(validated_video_path), "frames")
     validated_output = str(validate_output_path(output_dir, allow_create=True))
+    resize_t: tuple[int, int] | None = None
     if resize:
         if len(resize) != 2:
             return sanitize_output("resize must be [width, height]")
-        resize = tuple(resize)
+        resize_t = (resize[0], resize[1])
     if frame_interval:
         frame_interval = validate_positive_int(frame_interval)
     if max_frames:
         max_frames = validate_positive_int(max_frames)
-    result = extract_frames(validated_video_path, output_dir=validated_output, frame_interval=frame_interval, max_frames=max_frames, resize=resize)
+    result = extract_frames(validated_video_path, output_dir=validated_output, frame_interval=frame_interval, max_frames=max_frames, resize=resize_t)
     return sanitize_output(str(result))
 
 
@@ -1006,17 +1013,18 @@ def video_to_dataset_tool(video_path: str, output_dir: str | None = None, frame_
     if output_dir is None:
         output_dir = os.path.join(os.path.dirname(validated_video_path), "frames")
     validated_output = str(validate_output_path(output_dir, allow_create=True))
+    resize_t: tuple[int, int] | None = None
     if resize:
         if len(resize) != 2:
             return sanitize_output("resize must be [width, height]")
-        resize = tuple(resize)
+        resize_t = (resize[0], resize[1])
     if frame_interval:
         frame_interval = validate_positive_int(frame_interval)
     if max_frames:
         max_frames = validate_positive_int(max_frames)
     if name:
         name = validate_dataset_id(name)
-    dataset = video_to_dataset(validated_video_path, output_dir=validated_output, frame_interval=frame_interval, max_frames=max_frames, resize=resize, name=name)
+    dataset = video_to_dataset(validated_video_path, output_dir=validated_output, frame_interval=frame_interval, max_frames=max_frames, resize=resize_t, name=name)
     dataset_id = register_dataset(dataset.to_info())
     with _store_lock:
         _dataset_store[dataset_id] = dataset
@@ -1032,11 +1040,12 @@ def batch_video_to_datasets_tool(video_dir: str, output_base: str | None = None,
     frame_interval = validate_positive_int(frame_interval)
     if max_frames:
         max_frames = validate_positive_int(max_frames)
+    resize_t: tuple[int, int] | None = None
     if resize:
         if len(resize) != 2:
             return sanitize_output("resize must be [width, height]")
-        resize = tuple(resize)
-    results = video_batch_to_datasets(video_dir, output_base=output_base, frame_interval=frame_interval, max_frames=max_frames, resize=resize)
+        resize_t = (resize[0], resize[1])
+    results = video_batch_to_datasets(video_dir, output_base=output_base, frame_interval=frame_interval, max_frames=max_frames, resize=resize_t)
     return sanitize_output(str(results))
 
 
@@ -1251,6 +1260,15 @@ def dataset_list_resource() -> str:
 # =============================================================================
 
 
+def _fmt_num(x: float | None, nd: int = 3) -> str:
+    """None-safe numeric formatter for CSV-style resources.
+
+    Quality metrics are None for images that fail to decode; formatting those
+    directly raised a TypeError that crashed the (unwrapped) resource handler.
+    """
+    return f"{x:.{nd}f}" if x is not None else ""
+
+
 @mcp.resource("dataset://{dataset_id}/quality/scores")
 def dataset_quality_scores_resource(dataset_id: str) -> str:
     """Per-image quality scores as CSV-like resource"""
@@ -1261,7 +1279,12 @@ def dataset_quality_scores_resource(dataset_id: str) -> str:
     lines = ["image_id,blur,exposure,noise,contrast,resolution,color,overall,issues"]
     for q in report.per_image:
         issues = "|".join(q.issues) if q.issues else "none"
-        lines.append(f"{q.image_id},{q.blur_score:.3f},{q.exposure_score:.3f},{q.noise_score:.3f},{q.contrast_score:.3f},{q.resolution_score:.3f},{q.color_score:.3f},{q.overall_score:.3f},{issues}")
+        lines.append(
+            f"{q.image_id},{_fmt_num(q.blur_score)},{_fmt_num(q.exposure_score)},"
+            f"{_fmt_num(q.noise_score)},{_fmt_num(q.contrast_score)},"
+            f"{_fmt_num(q.resolution_score)},{_fmt_num(q.color_score)},"
+            f"{_fmt_num(q.overall_score)},{issues}"
+        )
     return "\n".join(lines)
 
 
@@ -1396,7 +1419,7 @@ def dataset_annotations_by_class_resource(dataset_id: str) -> str:
     dataset = _get_or_load_dataset(dataset_id)
     if dataset is None:
         return f"Dataset '{dataset_id}' not found."
-    counts = {}
+    counts: dict[str, int] = {}
     for img in dataset.images:
         for ann in img.annotations:
             counts[ann.label] = counts.get(ann.label, 0) + 1
@@ -1833,7 +1856,7 @@ async def health_check(request):
     return JSONResponse({
         "status": "ok",
         "service": "pixlint",
-        "version": "1.0.3",
+        "version": "1.1.0",
         "tools": len(mcp._tool_manager._tools),
         "datasets_loaded": len(_dataset_store),
     })
@@ -1857,7 +1880,9 @@ def main() -> None:
         mcp.settings.host = host
         mcp.settings.port = port
         _install_http_auth()
-        run_transport = "sse" if transport == "sse" else "streamable-http"
+        run_transport: Literal["sse", "streamable-http"] = (
+            "sse" if transport == "sse" else "streamable-http"
+        )
         mcp.run(transport=run_transport)
     else:
         mcp.run()

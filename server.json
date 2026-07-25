@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
   "name": "io.github.amitsingh-24/pixlint",
   "description": "Lint, curate & prepare computer-vision datasets from your AI assistant — MCP server, 67 tools",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "repository": {
     "url": "https://github.com/amitsingh-24/PixLint",
     "source": "github"
@@ -12,7 +12,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "pixlint",
-      "version": "1.0.3",
+      "version": "1.1.0",
       "transport": {
         "type": "stdio"
       },

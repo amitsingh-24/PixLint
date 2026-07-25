@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Any
 
 from defusedxml import ElementTree as DefusedET
 
@@ -113,7 +114,13 @@ class CVDataset:
             self._images.append(record)
 
     def _load_coco(self) -> None:
-        json_files = list(self.path.glob("**/*.json"))
+        # Prefer annotation JSONs under an `annotations/` dir, sorted for
+        # deterministic selection (real COCO layouts ship several *.json files,
+        # e.g. instances_train + instances_val + captions).
+        ann_dir = self.path / "annotations"
+        json_files = sorted(ann_dir.glob("*.json")) if ann_dir.exists() else []
+        if not json_files:
+            json_files = sorted(self.path.glob("**/*.json"))
         if not json_files:
             self._load_folder()
             return
@@ -126,40 +133,58 @@ class CVDataset:
             self._images = []
             return
 
-        categories = {cat["id"]: cat["name"] for cat in data.get("categories", [])}
+        categories = {
+            cat["id"]: cat.get("name", "unknown")
+            for cat in data.get("categories", [])
+            if cat.get("id") is not None
+        }
 
         images_map = {}
         for img in data.get("images", []):
-            img_path = self.path / img.get("file_name", "")
+            img_id = img.get("id")
+            if img_id is None:
+                continue
+            file_name = img.get("file_name", "")
+            img_path = self.path / file_name
             if not img_path.exists():
-                img_path = self.path / "images" / img.get("file_name", "")
+                img_path = self.path / "images" / file_name
             if not img_path.exists():
-                img_path = self.path / ".." / img.get("file_name", "")
+                img_path = self.path / ".." / file_name
             record = ImageRecord(
-                image_id=str(img["id"]),
-                path=str(img_path.resolve()) if img_path.exists() else str(self.path / img.get("file_name", "")),
+                image_id=str(img_id),
+                path=str(img_path.resolve()) if img_path.exists() else str(self.path / file_name),
                 width=img.get("width"),
                 height=img.get("height"),
             )
-            images_map[img["id"]] = record
+            images_map[img_id] = record
 
         for ann in data.get("annotations", []):
-            img_id = ann["image_id"]
-            record = images_map.get(img_id)
-            if record is None:
+            img_id = ann.get("image_id")
+            cat_id = ann.get("category_id")
+            if img_id is None or cat_id is None:
                 continue
-            cat_name = categories.get(ann["category_id"], "unknown")
-            bbox = ann.get("bbox")
-            if bbox:
-                bbox = tuple(bbox)
+            rec = images_map.get(img_id)
+            if rec is None:
+                continue
+            cat_name = categories.get(cat_id, "unknown")
+            # COCO stores bbox as [x, y, width, height]; normalize to the
+            # (x1, y1, x2, y2) convention every other loader/consumer uses.
+            raw_bbox = ann.get("bbox")
+            bbox = None
+            if raw_bbox and len(raw_bbox) == 4:
+                try:
+                    x, y, bw, bh = (float(v) for v in raw_bbox)
+                    bbox = (x, y, x + bw, y + bh)
+                except (TypeError, ValueError):
+                    bbox = None
             annotation = Annotation(
                 label=cat_name,
                 bbox=bbox,
                 area=ann.get("area"),
-                iscrowd=ann.get("iscrowd", False),
+                iscrowd=bool(ann.get("iscrowd", False)),
                 segmentation=ann.get("segmentation"),
             )
-            record.annotations.append(annotation)
+            rec.annotations.append(annotation)
 
         self._images = sorted(images_map.values(), key=lambda r: r.image_id)
 
@@ -169,36 +194,44 @@ class CVDataset:
             self._load_folder()
             return
 
+        def _num(el: Any, tag: str, default: float = 0.0) -> float:
+            # ElementTree.findtext returns "" (not the default) for a present-but-
+            # empty element, so int("")/float("500.0") would raise. Parse safely.
+            txt = (el.findtext(tag, "") or "").strip()
+            try:
+                return float(txt)
+            except ValueError:
+                return default
+
         for xml_file in sorted(ann_dir.glob("*.xml")):
             try:
                 tree = DefusedET.parse(xml_file)
                 root = tree.getroot()
-            except (ET.ParseError, OSError):
+            except (ET.ParseError, OSError, ValueError):
                 continue
-            filename = root.findtext("filename", "")
+            filename = root.findtext("filename", "") or ""
             img_path = self.path / "JPEGImages" / filename
             if not img_path.exists():
                 img_path = self.path / filename
             if not img_path.exists():
                 img_path = xml_file.parent / ".." / "JPEGImages" / filename
             size_el = root.find("size")
-            width = int(size_el.findtext("width", "0")) if size_el is not None else None
-            height = int(size_el.findtext("height", "0")) if size_el is not None else None
+            width = int(_num(size_el, "width", 0)) if size_el is not None else 0
+            height = int(_num(size_el, "height", 0)) if size_el is not None else 0
             record = ImageRecord(
                 image_id=xml_file.stem,
                 path=str(img_path.resolve()) if img_path.exists() else str(self.path / filename),
-                width=width,
-                height=height,
+                width=width or None,
+                height=height or None,
             )
             for obj in root.findall("object"):
-                name = obj.findtext("name", "unknown")
+                name = obj.findtext("name", "unknown") or "unknown"
                 bndbox = obj.find("bndbox")
                 if bndbox is not None:
-                    xmin = float(bndbox.findtext("xmin", "0"))
-                    ymin = float(bndbox.findtext("ymin", "0"))
-                    xmax = float(bndbox.findtext("xmax", "0"))
-                    ymax = float(bndbox.findtext("ymax", "0"))
-                    bbox = (xmin, ymin, xmax, ymax)
+                    bbox = (
+                        _num(bndbox, "xmin"), _num(bndbox, "ymin"),
+                        _num(bndbox, "xmax"), _num(bndbox, "ymax"),
+                    )
                 else:
                     bbox = None
                 record.annotations.append(Annotation(label=name, bbox=bbox))
@@ -212,29 +245,33 @@ class CVDataset:
             return
 
         names_file = self.path / "dataset.yaml"
-        class_names = {}
+        class_names: dict[int, str] = {}
         if names_file.exists() and _YAML_AVAILABLE:
-            with open(names_file) as f:
-                data = yaml.safe_load(f)
+            try:
+                with open(names_file) as f:
+                    data = yaml.safe_load(f) or {}
                 names = data.get("names", {})
                 if isinstance(names, list):
                     class_names = {i: n for i, n in enumerate(names)}
-                else:
+                elif isinstance(names, dict):
                     class_names = {int(k): v for k, v in names.items()}
+            except (yaml.YAMLError, ValueError, OSError):
+                class_names = {}
+
+        # Index images by stem once (O(n)) instead of rescanning the dir per label.
+        img_by_stem = {p.stem: p for p in sorted(images_dir.iterdir()) if p.is_file()}
 
         for label_file in sorted(labels_dir.iterdir()):
             if not label_file.is_file() or label_file.suffix.lower() != ".txt":
                 continue
-            stem = label_file.stem
-            img_candidates = [p for p in images_dir.iterdir() if p.stem == stem and p.is_file()]
-            if not img_candidates:
+            img_path = img_by_stem.get(label_file.stem)
+            if img_path is None:
                 continue
-            img_path = img_candidates[0]
             size = get_image_size(str(img_path))
             img_w = size[0] if size else None
             img_h = size[1] if size else None
             record = ImageRecord(
-                image_id=stem,
+                image_id=label_file.stem,
                 path=str(img_path),
                 width=img_w,
                 height=img_h,
@@ -242,21 +279,40 @@ class CVDataset:
             with open(label_file) as f:
                 for line in f:
                     parts = line.strip().split()
-                    if len(parts) >= 5:
-                        cls_id = int(parts[0])
-                        label = class_names.get(cls_id, f"class_{cls_id}")
-                        cx, cy, w_norm, h_norm = map(float, parts[1:5])
+                    if len(parts) < 5:
+                        continue
+                    try:
+                        cls_id = int(float(parts[0]))
+                        coords = [float(p) for p in parts[1:]]
+                    except ValueError:
+                        continue
+                    label = class_names.get(cls_id, f"class_{cls_id}")
+                    segmentation = None
+                    if len(coords) > 4 and len(coords) % 2 == 0:
+                        # YOLO-seg polygon row: cls x1 y1 x2 y2 ... (normalized).
+                        xs, ys = coords[0::2], coords[1::2]
+                        nx1, ny1, nx2, ny2 = min(xs), min(ys), max(xs), max(ys)
                         if img_w and img_h:
-                            abs_w = w_norm * img_w
-                            abs_h = h_norm * img_h
+                            bbox = (nx1 * img_w, ny1 * img_h, nx2 * img_w, ny2 * img_h)
+                            segmentation = [[
+                                coords[i] * (img_w if i % 2 == 0 else img_h)
+                                for i in range(len(coords))
+                            ]]
+                        else:
+                            bbox = (nx1, ny1, nx2, ny2)
+                            segmentation = [list(coords)]
+                    else:
+                        cx, cy, w_norm, h_norm = coords[:4]
+                        if img_w and img_h:
+                            abs_w, abs_h = w_norm * img_w, h_norm * img_h
                             x1 = cx * img_w - abs_w / 2
                             y1 = cy * img_h - abs_h / 2
-                            x2 = x1 + abs_w
-                            y2 = y1 + abs_h
-                            bbox = (x1, y1, x2, y2)
+                            bbox = (x1, y1, x1 + abs_w, y1 + abs_h)
                         else:
                             bbox = (cx, cy, w_norm, h_norm)
-                        record.annotations.append(Annotation(label=label, bbox=bbox))
+                    record.annotations.append(
+                        Annotation(label=label, bbox=bbox, segmentation=segmentation)
+                    )
             self._images.append(record)
 
     def _load_kitti(self) -> None:
@@ -266,17 +322,17 @@ class CVDataset:
             self._load_folder()
             return
 
+        img_by_stem = {p.stem: p for p in sorted(image_dir.iterdir()) if p.is_file()}
+
         for label_file in sorted(label_dir.iterdir()):
             if not label_file.is_file() or label_file.suffix.lower() != ".txt":
                 continue
-            stem = label_file.stem
-            img_candidates = [p for p in image_dir.iterdir() if p.stem == stem and p.is_file()]
-            if not img_candidates:
+            img_path = img_by_stem.get(label_file.stem)
+            if img_path is None:
                 continue
-            img_path = img_candidates[0]
             size = get_image_size(str(img_path))
             record = ImageRecord(
-                image_id=stem,
+                image_id=label_file.stem,
                 path=str(img_path),
                 width=size[0] if size else None,
                 height=size[1] if size else None,
@@ -284,12 +340,18 @@ class CVDataset:
             with open(label_file) as f:
                 for line in f:
                     parts = line.strip().split()
-                    if len(parts) >= 15:
-                        label = parts[0]
-                        h, w, l_dim = map(float, parts[8:11])
-                        x1, y1, x2, y2 = map(float, parts[4:8])
-                        bbox = (x1, y1, x2, y2)
-                        record.annotations.append(Annotation(label=label, bbox=bbox))
+                    if len(parts) < 15:
+                        continue
+                    label = parts[0]
+                    # 'DontCare'/'Misc' are ignore-regions, not real objects —
+                    # exclude them so they don't pollute class lists/stats.
+                    if label in ("DontCare", "Misc"):
+                        continue
+                    try:
+                        x1, y1, x2, y2 = (float(v) for v in parts[4:8])
+                    except ValueError:
+                        continue
+                    record.annotations.append(Annotation(label=label, bbox=(x1, y1, x2, y2)))
             self._images.append(record)
 
     def __len__(self) -> int:

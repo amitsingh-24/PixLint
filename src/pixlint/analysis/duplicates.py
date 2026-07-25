@@ -41,15 +41,14 @@ def find_duplicates(
     method_summary: dict[str, int] = {m: 0 for m in methods}
 
     image_cache: dict[str, np.ndarray | None] = {}
+    # Build the id->path map once, not on every _get_image call (was O(n) per
+    # lookup inside O(n^2) loops → effectively O(n^3)).
+    path_map = {img.image_id: img.path for img in dataset.images}
 
     def _get_image(img_id: str) -> np.ndarray | None:
         if img_id not in image_cache:
-            path_map = {img.image_id: img.path for img in dataset.images}
             path = path_map.get(img_id)
-            if path:
-                image_cache[img_id] = read_image(path)
-            else:
-                image_cache[img_id] = None
+            image_cache[img_id] = read_image(path) if path else None
         return image_cache[img_id]
 
     if "exact" in methods:
@@ -158,10 +157,11 @@ def _find_ssim_duplicates(
     handled: set[str] = set()
     images_list = list(dataset.images)
     _img_cache: dict[str, np.ndarray | None] = {}
+    # Build once, not per lookup inside the O(n^2) pair loop below.
+    path_map = {img.image_id: img.path for img in dataset.images}
 
     def _get_img(img_id: str) -> np.ndarray | None:
         if img_id not in _img_cache:
-            path_map = {img.image_id: img.path for img in dataset.images}
             path = path_map.get(img_id)
             _img_cache[img_id] = read_image(path) if path else None
         return _img_cache[img_id]

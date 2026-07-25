@@ -44,7 +44,7 @@ def export_pytorch(
         filename = f"{img.image_id}.jpg"
         cv2.imwrite(os.path.join(images_dir, filename), image)
 
-        record = {
+        record: dict[str, Any] = {
             "image_id": img.image_id,
             "filename": filename,
             "width": image_size[0],

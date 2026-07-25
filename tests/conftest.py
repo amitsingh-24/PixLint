@@ -109,6 +109,61 @@ def temp_yolo_dir(tmp_path):
 
 
 @pytest.fixture
+def temp_kitti_dir(tmp_path):
+    label_dir = tmp_path / "label_2"
+    label_dir.mkdir()
+    image_dir = tmp_path / "image_2"
+    image_dir.mkdir()
+
+    for i in range(3):
+        img = Image.fromarray(np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8))
+        img.save(image_dir / f"img_{i}.jpg")
+        # 15 KITTI fields: type trunc occ alpha x1 y1 x2 y2 h w l tx ty tz ry
+        with open(label_dir / f"img_{i}.txt", "w") as f:
+            f.write("Car 0 0 0 20 20 80 80 1.5 1.6 4.0 1 2 8 0\n")
+            f.write("Pedestrian 0 0 0 10 15 40 90 1.8 0.5 0.5 3 2 9 0\n")
+            # DontCare ignore-region — must NOT become a real class.
+            f.write("DontCare -1 -1 -10 50 50 60 60 -1 -1 -1 -1000 -1000 -1000 -10\n")
+
+    return tmp_path
+
+
+@pytest.fixture
+def temp_coco_crowd_dir(tmp_path):
+    """COCO dataset with a crowd/RLE annotation and a polygon-seg annotation."""
+    ann_dir = tmp_path / "annotations"
+    ann_dir.mkdir()
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+
+    for i in range(2):
+        img = Image.fromarray(np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8))
+        img.save(images_dir / f"img_{i}.jpg")
+
+    coco_data = {
+        "images": [
+            {"id": 1, "file_name": "img_0.jpg", "width": 100, "height": 100},
+            {"id": 2, "file_name": "img_1.jpg", "width": 100, "height": 100},
+        ],
+        "annotations": [
+            # RLE crowd annotation (segmentation is a dict, not a list)
+            {"id": 1, "image_id": 1, "category_id": 1, "bbox": [10, 10, 50, 50],
+             "area": 2500, "iscrowd": 1,
+             "segmentation": {"counts": [10, 5, 20], "size": [100, 100]}},
+            # polygon-seg annotation (segmentation is a list of rings)
+            {"id": 2, "image_id": 2, "category_id": 1, "bbox": [5, 5, 30, 30],
+             "area": 900, "iscrowd": 0,
+             "segmentation": [[5, 5, 35, 5, 35, 35, 5, 35]]},
+        ],
+        "categories": [{"id": 1, "name": "person"}],
+    }
+    with open(ann_dir / "instances.json", "w") as f:
+        json.dump(coco_data, f)
+
+    return tmp_path
+
+
+@pytest.fixture
 def folder_dataset(temp_image_dir):
     return CVDataset(str(temp_image_dir), format=DatasetFormat.FOLDER)
 
@@ -126,3 +181,13 @@ def voc_dataset(temp_voc_dir):
 @pytest.fixture
 def yolo_dataset(temp_yolo_dir):
     return CVDataset(str(temp_yolo_dir), format=DatasetFormat.YOLO)
+
+
+@pytest.fixture
+def kitti_dataset(temp_kitti_dir):
+    return CVDataset(str(temp_kitti_dir), format=DatasetFormat.KITTI)
+
+
+@pytest.fixture
+def coco_crowd_dataset(temp_coco_crowd_dir):
+    return CVDataset(str(temp_coco_crowd_dir), format=DatasetFormat.COCO)

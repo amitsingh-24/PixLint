@@ -48,7 +48,7 @@ def export_huggingface(
     for img in dataset.images:
         if not os.path.exists(img.path):
             continue
-        objects = {"bbox": [], "category": [], "area": []}
+        objects: dict[str, list] = {"bbox": [], "category": [], "area": []}
         for ann in img.annotations:
             if ann.bbox:
                 x1, y1, x2, y2 = ann.bbox

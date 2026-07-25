@@ -14,6 +14,7 @@ import json
 import os
 import shutil
 import uuid
+from typing import Any
 
 from pixlint.core.loader import CVDataset
 from pixlint.utils.image_io import get_image_size
@@ -96,7 +97,7 @@ def materialize_coco(images: list[ImageRecord], output_dir: str) -> tuple[int, i
             "height": h or 0,
         })
         for ann in img.annotations:
-            entry = {
+            entry: dict[str, Any] = {
                 "id": ann_id,
                 "image_id": img_id_int,
                 "category_id": class_to_id.get(ann.label, 0),
