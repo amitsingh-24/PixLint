@@ -76,3 +76,28 @@ jobs:
           repository: ${{ secrets.DOCKERHUB_USERNAME }}/pixlint
           short-description: "MCP server to lint, curate & prepare computer-vision datasets from your AI assistant."
           readme-filepath: ./README.md
+
+  publish-ghcr:
+    # Publishes the image to GitHub Container Registry (ghcr.io) so it appears
+    # under the repo's "Packages". Uses the built-in GITHUB_TOKEN — no secrets.
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version from pyproject.toml
+        id: ver
+        run: echo "version=$(grep -m1 '^version' pyproject.toml | sed -E 's/.*\"([^\"]+)\".*/\1/')" >> "$GITHUB_OUTPUT"
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build and push image to ghcr.io
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          IMAGE="$(echo "ghcr.io/${{ github.repository_owner }}/pixlint" | tr '[:upper:]' '[:lower:]')"
+          docker build --build-arg VERSION="$VERSION" \
+            -t "$IMAGE:latest" -t "$IMAGE:$VERSION" .
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:$VERSION"
