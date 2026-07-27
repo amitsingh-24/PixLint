@@ -133,7 +133,7 @@ def plot_embeddings(
                 for ann in img.annotations:
                     class_map.setdefault(ann.label, []).append(i)
 
-        colors = plt.cm.tab10(np.linspace(0, 1, max(len(class_map), 1)))
+        colors = matplotlib.colormaps["tab10"](np.linspace(0, 1, max(len(class_map), 1)))
         for (cls, indices), color in zip(class_map.items(), colors):
             if indices:
                 ax.scatter(coords[indices, 0], coords[indices, 1], label=cls, color=color, alpha=0.7, s=30)

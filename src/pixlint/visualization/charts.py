@@ -51,7 +51,7 @@ def plot_distribution(
     fig, ax = plt.subplots(figsize=(10, 6))
 
     if chart_type == "bar":
-        colors = plt.cm.tab10(np.linspace(0, 1, len(class_names)))
+        colors = matplotlib.colormaps["tab10"](np.linspace(0, 1, len(class_names)))
         ax.bar(class_names, counts, color=colors)
         ax.set_ylabel("Image Count")
         ax.set_title("Class Distribution")
@@ -62,7 +62,7 @@ def plot_distribution(
         ax.set_title("Class Distribution (Pie)")
 
     elif chart_type == "horizontal":
-        colors = plt.cm.tab10(np.linspace(0, 1, len(class_names)))
+        colors = matplotlib.colormaps["tab10"](np.linspace(0, 1, len(class_names)))
         ax.barh(class_names, counts, color=colors)
         ax.set_xlabel("Image Count")
         ax.set_title("Class Distribution")
