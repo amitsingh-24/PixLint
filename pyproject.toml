@@ -124,6 +124,14 @@ module = [
 ]
 ignore_missing_imports = true
 
+# numpy ships inline stubs that use Python 3.12-only `type` statements. With our
+# 3.10 target, mypy rejects that syntax while parsing numpy's own stubs. Skip
+# following into numpy (treat as Any) so third-party stub syntax can't break CI.
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
