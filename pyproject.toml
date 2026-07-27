@@ -107,7 +107,11 @@ select = ["E4", "E7", "E9", "F", "I", "W"]
 "__init__.py" = ["F401"]   # re-exports
 
 [tool.mypy]
-python_version = "3.10"
+# Target 3.12 so mypy tolerates the Python 3.12 `type` statement that modern
+# third-party libraries (numpy, tifffile, ...) now ship in their own source/stubs.
+# Our actual 3.10 runtime compatibility is enforced by the 3.10/3.11 test matrix
+# and ruff's py310 target — mypy's version only governs which syntax it accepts.
+python_version = "3.12"
 files = ["src/pixlint"]
 # Real type checks stay on for first-party code. We only silence "missing stubs"
 # for the optional heavy dependencies (guarded by try/except at import sites),
